@@ -1,4 +1,4 @@
-# GHCN-Daily Billion-Row Weather Warehouse
+# Billion-Row Weather Data Warehouse
 
 A Spark pipeline that loads **all 3,258,222,623 rows** of NOAA's Global Historical Climatology
 Network Daily (GHCN-Daily), 1750 to 2026, from the public AWS bucket into a year-partitioned
