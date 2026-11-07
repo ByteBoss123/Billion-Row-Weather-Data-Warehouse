@@ -1,0 +1,35 @@
+{
+ "source": "s3://noaa-ghcn-pds/csv/by_year",
+ "noaa_version": "3.35-upd-2026110417",
+ "started_utc": "2026-11-07T00:05:25Z",
+ "finished_utc": "2026-11-07T00:32:44Z",
+ "elapsed_s": 1639.0,
+ "ingest_s": 1124.0,
+ "source_count_s": 72.0,
+ "rows": {"source": 3258222623, "fact": 3249074450, "quarantine": 9148173},
+ "quarantine_by_reason": {"failed_noaa_qc": 9148173},
+ "qc_flags_failed": {"I": 6336646, "D": 1200065, "L": 398930, "S": 307752, "K": 219083, "Z": 212184, "O": 167153,
+                     "G": 121864, "X": 119974, "M": 23197, "N": 17448, "R": 12488, "W": 10041, "T": 1348},
+ "checks": {
+  "row_conservation": {"value": 0, "pass": true},
+  "no_orphan_stations": {"value": 0, "pass": true},
+  "unique_station_date_element": {"value": 0, "pass": true},
+  "station_dim_unique": {"value": 0, "pass": true},
+  "years_in_range": {"value": [1750, 2026], "pass": true}
+ },
+ "profile": {"stations_with_data": 132894, "stations_in_dim": 133041, "elements": 144, "years": [1750, 2026]},
+ "benchmark": {
+  "year": 2023,
+  "raw_csv_full_scan": {"seconds": [148.12], "median_s": 148.12, "rows": 4434467, "avg_tmax_c": 16.956852920541607},
+  "parquet_partition_pruned": {"seconds": [3.34, 2.69, 2.91], "median_s": 2.91, "rows": 4434467, "avg_tmax_c": 16.95685292054491},
+  "same_answer": true,
+  "speedup_x": 50.9
+ },
+ "outputs": {"fact_observation": {"parquet_files": 265, "bytes": 12160191375, "year_partitions": 265},
+             "quarantine": {"parquet_files": 452, "bytes": 52227538},
+             "dim_station": {"parquet_files": 3, "bytes": 3617146}},
+ "source_snapshot": {"files": 265, "bytes": 114112639112},
+ "emr_serverless": {"release": "emr-7.5.0", "job_run_id": "00ga40ibr4uih80b", "region": "us-east-1",
+                    "workers": "10 executors x 4 vCPU / 14 GB + driver",
+                    "billed": {"vCPU_hours": 19.584, "memory_GB_hours": 78.338, "storage_GB_hours": 576.333}}
+}
