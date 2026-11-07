@@ -7,7 +7,7 @@ HERE = Path(__file__).parent
 
 def test_pipeline_on_fixture():
     out = tempfile.mkdtemp()
-    p = subprocess.run([sys.executable, str(HERE.parent / "jobs/ghcn_pipeline.py"), str(HERE / "fixture_src"),
+    p = subprocess.run([sys.executable, str(HERE.parent / "pipeline/ghcn_pipeline.py"), str(HERE / "fixture_src"),
                         str(HERE / "fixture_stations.txt"), out, "2023"], capture_output=True, text=True, check=True)
     r = json.loads(p.stdout[p.stdout.index("{"):])
     assert r["rows"]["source"] == r["rows"]["fact"] + r["rows"]["quarantine"] == 676

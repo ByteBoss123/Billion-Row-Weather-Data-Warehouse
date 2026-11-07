@@ -1,16 +1,45 @@
 # Billion-Row Weather Data Warehouse
 
-A Spark pipeline that loads **all 3,258,222,623 rows** of NOAA's Global Historical Climatology
-Network Daily (GHCN-Daily), 1750 to 2026, from the public AWS bucket into a year-partitioned
-Parquet warehouse, quarantines observations that failed NOAA's quality control, and checks the
-result. Ran on AWS EMR Serverless on 2026-11-07.
+**Stack:** PySpark, Spark SQL, AWS EMR Serverless, Amazon S3, Parquet, pytest
 
-**Data:** real station observations (temperature, precipitation, snow and 141 other elements) from
-132,894 weather stations. Source `s3://noaa-ghcn-pds/csv/by_year/`, 265 files, 114.1 GB of CSV,
-NOAA version 3.35-upd-2026110417 (file list with sizes and ETags captured at the start of the run).
-NOAA updates these files daily, so a rerun will see slightly more rows.
+## Business Problem
+Insurance, energy, agriculture and climate research all draw on NOAA's daily weather record:
+**3.26 billion observations from 132,894 stations going back to 1750.** NOAA publishes it as 265
+yearly CSV files totalling 114 GB. In that form every question, even "what was the average high
+temperature in 2023?", has to read all 114 GB, rows that failed NOAA's own quality control sit
+mixed in with good data, and nothing guarantees a row was not dropped or duplicated on the way in.
+Analysts need a warehouse that answers in seconds and that they can trust.
 
-## Pipeline (`jobs/ghcn_pipeline.py`)
+## Steps Taken to Resolve
+1. **Ingested the full record:** read all 265 files from NOAA's public S3 bucket with a PySpark job on
+   AWS EMR Serverless (10 executors), after capturing the file list, sizes and checksums for provenance.
+2. **Typed and validated every row:** station id, date, element and value are typed; rows NOAA flagged
+   as failing quality control, or with a bad id, date or value, go to a quarantine table instead of being deleted.
+3. **Modeled for queries:** wrote a fact table partitioned by year (265 partitions, Parquet) and a station
+   dimension parsed from NOAA's fixed-width station list.
+4. **Proved nothing was lost:** automated checks for row conservation (source = loaded + quarantined),
+   orphan stations, duplicate station-date-element rows and year range; any failure is recorded as a fail.
+5. **Measured the payoff:** ran the same 2023 question against the raw CSV and the warehouse and
+   compared both the time and the answer.
+6. **Tested the rules first:** a 676-row sample in NOAA's format with deliberately bad rows confirms
+   each rule catches what it should before running on 3 billion rows.
+
+## Achievements
+- Loaded **3,258,222,623 real rows (114 GB)** in **19 minutes**, with **0 rows lost**: 3,249,074,450 loaded
+  plus 9,148,173 quarantined equals the source exactly.
+- Quarantined **9.1M rows (0.28%)** that failed NOAA quality control, led by internal-consistency (6.3M)
+  and duplicate (1.2M) flags, so they never reach analysts.
+- Cut the 2023 query from **148 s to 2.9 s (51x faster)** with the **identical answer** (4,434,467 rows,
+  16.957 °C average high).
+- Shrank storage from **114 GB of CSV to 12.2 GB of Parquet (9.4x)**.
+- All checks passed: **0 orphan stations, 0 duplicates**; whole run 27 minutes for about **$1.54**.
+
+## Data
+GHCN-Daily, NOAA version 3.35-upd-2026110417: `s3://noaa-ghcn-pds/csv/by_year/`, 265 files, 114.1 GB,
+1750 to 2026, 144 elements (temperature, precipitation, snow and others). NOAA updates these files
+daily, so a rerun will see slightly more rows.
+
+## Pipeline (`pipeline/ghcn_pipeline.py`)
 
 ```
 114 GB CSV (265 yearly files)
@@ -67,7 +96,7 @@ and checks that each rule fires and the benchmark answers match. Needs `pyspark`
 ## Run
 
 ```bash
-spark-submit jobs/ghcn_pipeline.py s3://noaa-ghcn-pds/csv/by_year s3://noaa-ghcn-pds/ghcnd-stations.txt s3://<your-bucket>/ghcn/out 2023
+spark-submit pipeline/ghcn_pipeline.py s3://noaa-ghcn-pds/csv/by_year s3://noaa-ghcn-pds/ghcnd-stations.txt s3://<your-bucket>/ghcn/out 2023
 ```
 The job role needs read access to `noaa-ghcn-pds` and write access to the output bucket.
 
